@@ -1,0 +1,656 @@
+{
+  "name": "02_Lead Follow-Up Monitoring",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -1344,
+        192
+      ],
+      "id": "9bc0018f-3d65-40ab-bb43-03b47c2661e1",
+      "name": "Deadline Monitor"
+    },
+    {
+      "parameters": {
+        "url": "https://aios.pipedrive.com/api/v1/activities",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -1120,
+        192
+      ],
+      "id": "b3c11c80-2305-4221-8285-86385205b3bf",
+      "name": "Get Open Activities & Tasks",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "9rJRllPHjxR7MeSd",
+          "name": "Query Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0C2VR73JMQ",
+          "mode": "list",
+          "cachedResultName": "crm-followup-reminder"
+        },
+        "text": "=🔵 Activity Due Today\n\nActivity: {{ $('Get Open Activities & Tasks').item.json.data[0].subject }}\nCustomer: {{ $('Get Lead from Pipedrive').item.json.data.map ? $('Get Lead from Pipedrive').item.json.data.map(d => d.title).join('\\n') : $('Get Lead from Pipedrive').item.json.data.title }}\n\nDue: {{ $('Get Open Activities & Tasks').item.json.data[0].due_date }}\n\nThis activity is due today.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        -224,
+        192
+      ],
+      "id": "5ae8adca-5b18-43f3-b6dc-074f5c16b973",
+      "name": "Notify — Deadline Today",
+      "webhookId": "852d0268-416c-4e41-aac1-df7094ab3321",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "KXfOt0SLfbTu6fJn",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BT0KK6SG5",
+          "mode": "list",
+          "cachedResultName": "clientbridge-operations"
+        },
+        "text": "=🔴 Activity Overdue\n\nActivity: {{ $('Get Open Activities & Tasks').item.json.data[0].subject }}\nCustomer: {{ $('Get Lead from Pipedrive').item.json.data.title }}\n\nDue: {{ $('Get Open Activities & Tasks').item.json.data[0].due_date }}\n\nThis activity has passed its deadline and is still outstanding.\n\nPlease review and take the necessary action.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        -224,
+        384
+      ],
+      "id": "f09a04f1-62db-49f6-bee6-9c7037f1fa80",
+      "name": "Notify — Activity Overdue",
+      "webhookId": "852d0268-416c-4e41-aac1-df7094ab3321",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "KXfOt0SLfbTu6fJn",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0C291D6WTD",
+          "mode": "list",
+          "cachedResultName": "crm_alerts"
+        },
+        "text": "=🟡 Activity Due Tomorrow\n\nActivity: {{ $('Get Open Activities & Tasks').item.json.data[0].subject }}\nCustomer: {{ $('Get Lead from Pipedrive').item.json.data.title }}\n\nDue: {{ $('Get Open Activities & Tasks').item.json.data[0].due_date }}\n\nPlease ensure this activity is completed by the deadline. ",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        -224,
+        0
+      ],
+      "id": "3d2d8e2e-4b27-4bfd-86bf-8151086fe019",
+      "name": "Notify — Deadline Tomorrow",
+      "webhookId": "852d0268-416c-4e41-aac1-df7094ab3321",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "KXfOt0SLfbTu6fJn",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ !$('Itemize Activities').item.json.done && $('Itemize Activities').item.json.due_date === $now.plus({ days: 1 }).toFormat('yyyy-MM-dd') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "23febd30-8c88-4d2f-90a5-b1ef58e2a72d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "due_tomorrow"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "13ef03c4-2b05-4e6a-98bf-de523497bdd1",
+                    "leftValue": "={{ !$('Itemize Activities').item.json.done && $('Itemize Activities').item.json.due_date === $now.toFormat('yyyy-MM-dd') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "due_today"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "759e74cd-a341-4285-b6ee-79be8ee86a32",
+                    "leftValue": "={{ !$('Itemize Activities').item.json.done && $('Itemize Activities').item.json.due_date < $now.toFormat('yyyy-MM-dd') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "overdue"
+            }
+          ]
+        },
+        "options": {
+          "allMatchingOutputs": true
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -448,
+        176
+      ],
+      "id": "571b0ef8-b18e-4b5b-ae0b-6ba409802f64",
+      "name": "Route Deadline Notifications"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -896,
+        192
+      ],
+      "id": "53ed1734-4087-43af-81ae-96d19f808417",
+      "name": "Itemize Activities"
+    },
+    {
+      "parameters": {
+        "url": "=https://aios.pipedrive.com/api/v1/leads/{{ $json.lead.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -672,
+        192
+      ],
+      "id": "65c66a49-3d7e-44b0-b42a-35fc3cf30067",
+      "name": "Get Lead from Pipedrive",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "9rJRllPHjxR7MeSd",
+          "name": "Query Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "note",
+        "operation": "get",
+        "noteId": 15
+      },
+      "type": "n8n-nodes-base.pipedrive",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "4830cce0-1e90-4d2a-94d9-5a0cf592f28b",
+      "name": "Get a note",
+      "credentials": {
+        "pipedriveApi": {
+          "id": "vQzN8tFUrctHJj2n",
+          "name": "Pipedrive account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Itemize Activities": [
+      {
+        "json": {
+          "id": 98,
+          "user_id": 27960274,
+          "done": false,
+          "type": "task",
+          "reference_type": null,
+          "reference_id": null,
+          "conference_meeting_client": null,
+          "conference_meeting_url": null,
+          "due_date": "2026-09-19",
+          "due_time": "09:00",
+          "duration": "",
+          "busy_flag": true,
+          "add_time": "2026-09-18 05:00:36",
+          "marked_as_done_time": "",
+          "last_notification_time": null,
+          "last_notification_user_id": null,
+          "notification_language_id": null,
+          "subject": "Schedule an initial discovery call this week to discuss approach, timelines, and pricing structure",
+          "public_description": null,
+          "calendar_sync_include_context": null,
+          "location": null,
+          "org_id": null,
+          "person_id": 17,
+          "deal_id": null,
+          "lead_id": "e20b7060-b31d-11f1-93b8-5ffad46f2ab8",
+          "project_id": null,
+          "active_flag": true,
+          "update_time": "2026-09-18 05:00:36",
+          "update_user_id": null,
+          "source_timezone": null,
+          "rec_rule": null,
+          "rec_rule_extension": null,
+          "rec_master_activity_id": null,
+          "conference_meeting_id": null,
+          "original_start_time": null,
+          "private": false,
+          "priority": null,
+          "outcome": null,
+          "note": null,
+          "created_by_user_id": 27960274,
+          "location_subpremise": null,
+          "location_street_number": null,
+          "location_route": null,
+          "location_sublocality": null,
+          "location_locality": null,
+          "location_admin_area_level_1": null,
+          "location_admin_area_level_2": null,
+          "location_country": null,
+          "location_postal_code": null,
+          "location_formatted_address": null,
+          "attendees": null,
+          "participants": [
+            {
+              "person_id": 17,
+              "primary_flag": true
+            }
+          ],
+          "series": null,
+          "is_recurring": null,
+          "org_name": null,
+          "person_name": "Naomi Sunday",
+          "deal_title": null,
+          "lead_title": "Naomi Sunday - Operational Workflow and Scalability Assessment - (New Lead)",
+          "project_title": null,
+          "owner_name": "billy",
+          "person_dropbox_bcc": "aios@pipedrivemail.com",
+          "deal_dropbox_bcc": null,
+          "assigned_to_user_id": 27960274,
+          "type_name": "Task",
+          "lead": {
+            "id": "e20b7060-b31d-11f1-93b8-5ffad46f2ab8",
+            "title": "Naomi Sunday - Operational Workflow and Scalability Assessment - (New Lead)",
+            "labels": "",
+            "source": "API",
+            "origin": "API",
+            "origin_id": null,
+            "channel": null,
+            "channel_id": null,
+            "owner_id": 27960274,
+            "creator_user_id": 27960274,
+            "deal_id": null,
+            "related_person_id": 17,
+            "related_org_id": null,
+            "person_name": null,
+            "person_phone": null,
+            "person_email": null,
+            "org_name": null,
+            "org_address": null,
+            "active_flag": true,
+            "add_time": "2026-09-18 05:00:35.302",
+            "update_time": "2026-09-18 13:02:01.472",
+            "archive_time": null,
+            "archive_reason": null,
+            "is_archived": false,
+            "seen": false,
+            "deal_value": null,
+            "deal_currency": null,
+            "next_activity_id": 98,
+            "next_activity_date": "2026-09-20",
+            "next_activity_time": "09:00:00",
+            "visible_to": 3,
+            "source_reference_id": null,
+            "user": null,
+            "deal_expected_close_date": null,
+            "next_activity_status": null,
+            "next_activity_datetime": null,
+            "87bbb52fb9c9ef50860ebfd1f6cfe33632efd176": null,
+            "rotten_time": null
+          },
+          "project": null,
+          "company_id": 16629312
+        }
+      },
+      {
+        "json": {
+          "id": 105,
+          "user_id": 27960274,
+          "done": false,
+          "type": "task",
+          "reference_type": null,
+          "reference_id": null,
+          "conference_meeting_client": null,
+          "conference_meeting_url": null,
+          "due_date": "2026-09-18",
+          "due_time": "09:00",
+          "duration": "",
+          "busy_flag": true,
+          "add_time": "2026-09-18 12:38:48",
+          "marked_as_done_time": "",
+          "last_notification_time": null,
+          "last_notification_user_id": null,
+          "notification_language_id": null,
+          "subject": "Discuss what is possible for improving onboarding",
+          "public_description": null,
+          "calendar_sync_include_context": null,
+          "location": null,
+          "org_id": null,
+          "person_id": 19,
+          "deal_id": null,
+          "lead_id": "e4ea8060-b35d-11f1-ad66-dbba68314d2d",
+          "project_id": null,
+          "active_flag": true,
+          "update_time": "2026-09-18 12:38:48",
+          "update_user_id": null,
+          "source_timezone": null,
+          "rec_rule": null,
+          "rec_rule_extension": null,
+          "rec_master_activity_id": null,
+          "conference_meeting_id": null,
+          "original_start_time": null,
+          "private": false,
+          "priority": null,
+          "outcome": null,
+          "note": null,
+          "created_by_user_id": 27960274,
+          "location_subpremise": null,
+          "location_street_number": null,
+          "location_route": null,
+          "location_sublocality": null,
+          "location_locality": null,
+          "location_admin_area_level_1": null,
+          "location_admin_area_level_2": null,
+          "location_country": null,
+          "location_postal_code": null,
+          "location_formatted_address": null,
+          "attendees": null,
+          "participants": [
+            {
+              "person_id": 19,
+              "primary_flag": true
+            }
+          ],
+          "series": null,
+          "is_recurring": null,
+          "org_name": null,
+          "person_name": "Amara Chukwu",
+          "deal_title": null,
+          "lead_title": "Amara Chukwu - Client onboarding process streamlining - (New Lead)",
+          "project_title": null,
+          "owner_name": "billy",
+          "person_dropbox_bcc": "aios@pipedrivemail.com",
+          "deal_dropbox_bcc": null,
+          "assigned_to_user_id": 27960274,
+          "type_name": "Task",
+          "lead": null,
+          "project": null,
+          "company_id": 16629312
+        }
+      },
+      {
+        "json": {
+          "id": 106,
+          "user_id": 27960274,
+          "done": false,
+          "type": "task",
+          "reference_type": null,
+          "reference_id": null,
+          "conference_meeting_client": null,
+          "conference_meeting_url": null,
+          "due_date": "2026-09-13",
+          "due_time": "09:00",
+          "duration": "",
+          "busy_flag": true,
+          "add_time": "2026-09-18 12:38:48",
+          "marked_as_done_time": "",
+          "last_notification_time": null,
+          "last_notification_user_id": null,
+          "notification_language_id": null,
+          "subject": "Propose automation or system options for onboarding",
+          "public_description": null,
+          "calendar_sync_include_context": null,
+          "location": null,
+          "org_id": null,
+          "person_id": 19,
+          "deal_id": null,
+          "lead_id": "e4ea8060-b35d-11f1-ad66-dbba68314d2d",
+          "project_id": null,
+          "active_flag": true,
+          "update_time": "2026-09-18 12:38:48",
+          "update_user_id": null,
+          "source_timezone": null,
+          "rec_rule": null,
+          "rec_rule_extension": null,
+          "rec_master_activity_id": null,
+          "conference_meeting_id": null,
+          "original_start_time": null,
+          "private": false,
+          "priority": null,
+          "outcome": null,
+          "note": null,
+          "created_by_user_id": 27960274,
+          "location_subpremise": null,
+          "location_street_number": null,
+          "location_route": null,
+          "location_sublocality": null,
+          "location_locality": null,
+          "location_admin_area_level_1": null,
+          "location_admin_area_level_2": null,
+          "location_country": null,
+          "location_postal_code": null,
+          "location_formatted_address": null,
+          "attendees": null,
+          "participants": [
+            {
+              "person_id": 19,
+              "primary_flag": true
+            }
+          ],
+          "series": null,
+          "is_recurring": null,
+          "org_name": null,
+          "person_name": "Amara Chukwu",
+          "deal_title": null,
+          "lead_title": "Amara Chukwu - Client onboarding process streamlining - (New Lead)",
+          "project_title": null,
+          "owner_name": "billy",
+          "person_dropbox_bcc": "aios@pipedrivemail.com",
+          "deal_dropbox_bcc": null,
+          "assigned_to_user_id": 27960274,
+          "type_name": "Task",
+          "lead": null,
+          "project": null,
+          "company_id": 16629312
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Deadline Monitor": {
+      "main": [
+        [
+          {
+            "node": "Get Open Activities & Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Open Activities & Tasks": {
+      "main": [
+        [
+          {
+            "node": "Itemize Activities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Deadline Notifications": {
+      "main": [
+        [
+          {
+            "node": "Notify — Deadline Tomorrow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify — Deadline Today",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify — Activity Overdue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Itemize Activities": {
+      "main": [
+        [
+          {
+            "node": "Get Lead from Pipedrive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Lead from Pipedrive": {
+      "main": [
+        [
+          {
+            "node": "Route Deadline Notifications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "48295d61-d813-4217-aa60-e627d987356f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b7d85afad4a9d5a8f2b87e170763c07d14b06f280ee367dc3dcc73a13aa08b37"
+  },
+  "nodeGroups": [],
+  "id": "2CQzei9EJoosscbW",
+  "tags": []
+}

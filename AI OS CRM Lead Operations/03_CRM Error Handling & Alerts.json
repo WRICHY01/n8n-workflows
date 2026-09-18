@@ -1,0 +1,67 @@
+{
+  "name": "03_CRM Error Handling & Alerts",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "38604465-31b4-43bd-9496-32a1a709d5b0",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "732413917",
+        "text": "=🚨 *AIOS Workflow Execution Error*\n\n📋 *Workflow:* `{{ $json.workflow.name }}`\n🆔 *Execution ID:* `{{ $json.execution.id }}`\n🛑 *Failed At Node:* `{{ $json.execution.lastNodeExecuted }}`\n\n💬 *Error Message:*\n{{ $json.execution.error.message }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "a31bfd9c-f2d4-448e-bc60-8597eb692731",
+      "name": "Send a text message",
+      "webhookId": "5a8cedd0-7887-460d-916d-14f413229ff4",
+      "credentials": {
+        "telegramApi": {
+          "id": "U0M4nGUi6uGYpYwW",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "e9d03135-644d-4971-9a32-f57520214db7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b7d85afad4a9d5a8f2b87e170763c07d14b06f280ee367dc3dcc73a13aa08b37"
+  },
+  "nodeGroups": [],
+  "id": "QtE4Ore84Za32658",
+  "tags": []
+}
